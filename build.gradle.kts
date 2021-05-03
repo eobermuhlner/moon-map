@@ -1,7 +1,8 @@
 plugins {
     java
-    kotlin("jvm") version "1.4.32"
     application
+    kotlin("jvm") version "1.4.32"
+    id("org.openjfx.javafxplugin") version "0.0.9"
 }
 
 group = "org.example"
@@ -18,8 +19,14 @@ dependencies {
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine")
 }
 
+javafx {
+    version = "12"
+    modules("javafx.controls")
+}
+
 application {
     mainClass.set("ch.obermuhlner.moonmap.MoonMap")
+
 }
 
 tasks.getByName<Test>("test") {

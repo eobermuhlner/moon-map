@@ -1,5 +1,6 @@
 package ch.obermuhlner.moonmap
 
+import ch.obermuhlner.kotlin.javafx.INTEGER_FORMAT
 import java.awt.BasicStroke
 import java.awt.Color
 import java.awt.Graphics2D
@@ -12,13 +13,13 @@ import javax.imageio.ImageIO
 import kotlin.math.*
 
 class MoonMapOverlay(
-    val image: BufferedImage,
     val centerX: Int,
     val centerY: Int,
     val radius: Int,
+    val rotation: Double,
     val librationLatitude: Double,
     val librationLongitude: Double,
-    val rotation: Double,
+    val phase: Double,
     val strokeWidth: Float
 ) {
     val pointsOfInterest: MutableSet<PointOfInterest> = mutableSetOf()
@@ -28,7 +29,7 @@ class MoonMapOverlay(
     }
 
     private val visibleCraterNames = setOf(
-        "Tycho", "Copernicus", "Aristarchus", "Kepler", "Plato", "Ptolemaeus")
+        "Tycho", "Copernicus", "Aristarchus", "Kepler", "Plato", "Ptolemaeus", "Posidonius", "Theophilus", "Hercules", "Piccolomini", "Atlas", "Macrobius")
     fun loadVisibleCraters() {
         loadPoints(PointType.Crater, "MoonCraters.csv") {
             it.name in visibleCraterNames
@@ -44,7 +45,6 @@ class MoonMapOverlay(
         if (resourceStream != null) {
             for (line in BufferedReader(InputStreamReader(resourceStream)).lines()) {
                 val cells = line.split(",")
-                println(cells)
                 val name = cells[0]
                 val diameter = cells[1].toDouble()
                 val latitude = cells[2].toDouble()
@@ -58,35 +58,31 @@ class MoonMapOverlay(
         }
     }
 
-    fun overlay(): BufferedImage {
+    fun overlay(image: BufferedImage): BufferedImage {
         val output = BufferedImage(image.width, image.height, BufferedImage.TYPE_INT_RGB)
         val graphics = output.createGraphics()!!
 
+        graphics.drawImage(image, 0, 0, null)
+        overlay(graphics)
+        return output
+    }
+
+    fun overlay(graphics: Graphics2D) {
         graphics.setRenderingHint(RenderingHints.KEY_ANTIALIASING, RenderingHints.VALUE_ANTIALIAS_ON)
         graphics.setRenderingHint(RenderingHints.KEY_TEXT_ANTIALIASING, RenderingHints.VALUE_TEXT_ANTIALIAS_ON)
         graphics.stroke = BasicStroke(strokeWidth)
         graphics.font = graphics.font.deriveFont(graphics.font.size * strokeWidth)
 
-        graphics.drawImage(image, 0, 0, null)
-
         graphics.color = Color.green.darker().darker()
         graphics.drawOval(centerX-radius, centerY-radius, radius*2, radius*2)
         drawCoordinateGrid(graphics)
 
-//        graphics.color = Color.YELLOW
-//        drawName(graphics, "Tycho", -43.3, 11.22, true)
-//        drawName(graphics, "Copernicus", 9.62, 20.08, true)
-//        drawName(graphics, "Aristarchus", 23.73, 47.49, true)
-//        drawName(graphics, "Kepler", 8.12, 38.01, true)
-//        drawName(graphics, "Plato", 51.62, 9.38, true)
-//        drawName(graphics, "Ptolemaeus", -9.16, 1.84, true)
-
+        graphics.color = Color.green.brighter().brighter()
+        drawLongitude(graphics, phase * 180.0 + 90.0, drawLabel = false)
         graphics.color = Color.GREEN.brighter()
         for (point in pointsOfInterest) {
             drawPointOfInterest(graphics, point)
         }
-
-        return output
     }
 
     private fun drawCoordinateGrid(graphics: Graphics2D) {
@@ -112,15 +108,15 @@ class MoonMapOverlay(
         }
     }
 
-    private fun drawLongitude(graphics: Graphics2D, longitude: Double) {
+    private fun drawLongitude(graphics: Graphics2D, longitude: Double, drawLabel: Boolean = true) {
         var lastPoint: CartesianPoint? = null
         for (latitude in -90 .. 90 step 2) {
             val nextPoint = sphereToCartesianPoint(latitude.toDouble(), longitude)
             if (lastPoint != null) {
                 drawLine(graphics, lastPoint, nextPoint)
             }
-            if (latitude == 0) {
-                drawName(graphics, longitude.toString(), latitude.toDouble(), longitude)
+            if (drawLabel && latitude == 0) {
+                drawName(graphics, INTEGER_FORMAT.format(longitude), latitude.toDouble(), longitude)
             }
             lastPoint = nextPoint
         }
@@ -159,15 +155,15 @@ class MoonMapOverlay(
     }
 
     private fun sphereToCartesianPoint(latitude: Double, longitude: Double): CartesianPoint {
-        val x = radius * cos(radians(-latitude + librationLatitude)) * cos(radians(longitude + librationLongitude + 90))
+        val x = radius * cos(radians(-latitude - librationLatitude)) * cos(radians(longitude + 90 + librationLongitude))
         //val y = radius * cos(radians(-latitude + librationLatitude)) * sin(radians(longitude + librationLongitude + 90))
-        val z = radius * sin(radians(-latitude + librationLatitude))
+        val z = radius * sin(radians(-latitude - librationLatitude))
 
         var cartesianPoint = CartesianPoint(x, z)
 
         if (rotation != 0.0) {
             val polarPoint = PolarPoint(cartesianPoint)
-            cartesianPoint = CartesianPoint(PolarPoint(polarPoint.radius, polarPoint.angle + rotation))
+            cartesianPoint = CartesianPoint(PolarPoint(polarPoint.radius, polarPoint.angle + radians(rotation)))
         }
 
         return CartesianPoint(cartesianPoint.x + centerX, cartesianPoint.y + centerY)
@@ -188,16 +184,26 @@ class MoonMapOverlay(
             val centerX = image.width / 2 + offsetX
             val centerY = image.height / 2 + offsetY
             val radius = (min(image.width, image.height) * 0.8 / 2).toInt()
+            val rotation = -16.0
             val librationLatitude = -6.6
             val librationLongitude = -6.5
-            val rotation = radians(-16.0)
+            val phase = 0.6
             val strokeWidth = min(image.width, image.height) * 0.001f
 
-            val map = MoonMapOverlay(image, centerX, centerY, radius, librationLatitude, librationLongitude, rotation, strokeWidth)
+            val map = MoonMapOverlay(
+                centerX,
+                centerY,
+                radius,
+                rotation,
+                librationLatitude,
+                librationLongitude,
+                phase,
+                strokeWidth
+            )
             map.loadMaria()
             map.loadVisibleCraters()
-            map.loadCraters() { it.diameter > 120 }
-            val overlayImage = map.overlay()
+            //map.loadCraters() { it.diameter > 120 }
+            val overlayImage = map.overlay(image)
 
             ImageIO.write(overlayImage, "png", File("overlay1.png"))
         }
@@ -210,15 +216,25 @@ class MoonMapOverlay(
             val centerX = image.width / 2 + offsetX
             val centerY = image.height / 2 + offsetY
             val radius = (min(image.width, image.height) * 0.87 / 2).toInt()
+            val rotation = 10.0
             val librationLatitude = -7.5
             val librationLongitude = 6.0
-            val rotation = radians(10.0)
+            val phase = 0.3
             val strokeWidth = min(image.width, image.height) * 0.001f
 
-            val map = MoonMapOverlay(image, centerX, centerY, radius, librationLatitude, librationLongitude, rotation, strokeWidth)
+            val map = MoonMapOverlay(
+                centerX,
+                centerY,
+                radius,
+                rotation,
+                librationLatitude,
+                librationLongitude,
+                phase,
+                strokeWidth
+            )
             map.loadMaria()
             map.loadVisibleCraters()
-            val overlayImage = map.overlay()
+            val overlayImage = map.overlay(image)
 
             ImageIO.write(overlayImage, "png", File("overlay2.png"))
         }
