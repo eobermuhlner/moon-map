@@ -39,6 +39,7 @@ class MoonMapApplication : Application() {
     private var homeDirectory = Paths.get(System.getProperty("user.home", "."))
 
     private var currentBufferedImage = BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB)
+    private var overlayBufferedImage: BufferedImage? = null
 
     private val currentImageView = imageview {
         isPreserveRatio = true
@@ -77,7 +78,7 @@ class MoonMapApplication : Application() {
             }
             children += button("Save Image ...") {
                 onAction = EventHandler {
-
+                    saveImageFile(stage)
                 }
             }
         }
@@ -370,6 +371,24 @@ class MoonMapApplication : Application() {
         }
     }
 
+    private fun saveImageFile(stage: Stage) {
+        overlayBufferedImage?.let {
+            val fileChooser = FileChooser()
+            fileChooser.initialDirectory = homeDirectory.toFile()
+            fileChooser.title = "Save Image"
+            fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("Image", "*.tif", "*.tiff", "*.png", "*.jpg", "*.jpeg"))
+            fileChooser.extensionFilters.add(FileChooser.ExtensionFilter("All", "*"))
+            val outputFile = fileChooser.showSaveDialog(stage)
+            if (outputFile != null) {
+                try {
+                    ImageIO.write(overlayBufferedImage, "png", outputFile)
+                } catch (e: IOException) {
+                    e.printStackTrace()
+                }
+            }
+        }
+    }
+
     private fun initializeListeners() {
         centerXProperty.addListener { _, _, _ -> updateMoonMap() }
         centerYProperty.addListener { _, _, _ -> updateMoonMap() }
@@ -414,16 +433,17 @@ class MoonMapApplication : Application() {
         moonMapOverlay.loadMaria()
         moonMapOverlay.loadVisibleCraters()
 
-        val overlayBufferedImage = moonMapOverlay.overlay(currentBufferedImage)
-
-        val overlayImage = WritableImage(overlayBufferedImage.width, overlayBufferedImage.height)
-        val pixelWriter = overlayImage.pixelWriter
-        for (y in 0 until overlayBufferedImage.height) {
-            for (x in 0 until overlayBufferedImage.width) {
-                pixelWriter.setArgb(x, y, -0x1000000 or overlayBufferedImage.getRGB(x, y))
+        overlayBufferedImage = moonMapOverlay.overlay(currentBufferedImage)
+        overlayBufferedImage?.let {
+            val overlayImage = WritableImage(it.width, it.height)
+            val pixelWriter = overlayImage.pixelWriter
+            for (y in 0 until it.height) {
+                for (x in 0 until it.width) {
+                    pixelWriter.setArgb(x, y, -0x1000000 or it.getRGB(x, y))
+                }
             }
+            currentImageView.image = overlayImage
         }
-        currentImageView.image = overlayImage
     }
 
     companion object {
