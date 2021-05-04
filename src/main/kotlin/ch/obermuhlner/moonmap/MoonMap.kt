@@ -100,33 +100,22 @@ class MoonMapCli(parser: ArgParser) {
         for (filename in filenames) {
             val image = ImageIO.read(File(filename))
 
-            val centerX = parseCenterX(image)
-            val centerY = parseCenterY(image)
-            val radius = parseRadius(image)
-            val rotation = parseRotation()
-            val phase = parsePhase()
-            val librationLatitude = parseLibrationLatitude()
-            val librationLongitude = parseLibrationLongitude()
-            val strokeWidth = parseStrokeWidth(image)
+            val moonMap = MoonMapOverlay()
 
-            println("Phase: $phase")
+            moonMap.centerX = parseCenterX(image)
+            moonMap.centerY = parseCenterY(image)
+            moonMap.radius = parseRadius(image)
+            moonMap.rotation = parseRotation()
+            moonMap.phase = parsePhase()
+            moonMap.librationLatitude = parseLibrationLatitude()
+            moonMap.librationLongitude = parseLibrationLongitude()
+            moonMap.strokeWidth = parseStrokeWidth(image)
 
-            val moonMapOverlay = MoonMapOverlay(
-                centerX,
-                centerY,
-                radius,
-                rotation,
-                librationLatitude,
-                librationLongitude,
-                phase,
-                strokeWidth
-            )
-
-            moonMapOverlay.loadMaria()
-            moonMapOverlay.loadVisibleCraters()
+            moonMap.loadMaria()
+            moonMap.loadVisibleCraters()
             //moonMapOverlay.loadCraters() { it.diameter > 200 }
 
-            val overlayImage = moonMapOverlay.overlay(image)
+            val overlayImage = moonMap.overlay(image)
 
             ImageIO.write(overlayImage, "png", File("$filename$argOutputSuffix.png"))
         }

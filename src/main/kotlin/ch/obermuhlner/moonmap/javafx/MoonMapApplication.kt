@@ -52,6 +52,11 @@ class MoonMapApplication : Application() {
     private val leftIcon = Image("icons/baseline_keyboard_arrow_left_black_18dp.png")
     private val rightIcon = Image("icons/baseline_keyboard_arrow_right_black_18dp.png")
 
+    val moonMapOverlay = MoonMapOverlay().apply {
+        loadMaria()
+        loadVisibleCraters()
+    }
+
     override fun start(primaryStage: Stage) {
         val scene = Scene(createUserInterface(primaryStage))
 
@@ -420,18 +425,14 @@ class MoonMapApplication : Application() {
     }
 
     private fun updateMoonMap() {
-        val moonMapOverlay = MoonMapOverlay(
-            centerXProperty.get(),
-            centerYProperty.get(),
-            radiusProperty.get(),
-            rotationProperty.get(),
-            librationLatitudeProperty.get(),
-            librationLongitudeProperty.get(),
-            phaseProperty.get() / 100.0,
-            strokeWidthProperty.get().toFloat()
-        )
-        moonMapOverlay.loadMaria()
-        moonMapOverlay.loadVisibleCraters()
+        moonMapOverlay.centerX = centerXProperty.get()
+        moonMapOverlay.centerY = centerYProperty.get()
+        moonMapOverlay.radius = radiusProperty.get()
+        moonMapOverlay.rotation = rotationProperty.get()
+        moonMapOverlay.librationLatitude = librationLatitudeProperty.get()
+        moonMapOverlay.librationLongitude = librationLongitudeProperty.get()
+        moonMapOverlay.phase = phaseProperty.get() / 100.0
+        moonMapOverlay.strokeWidth = strokeWidthProperty.get().toFloat()
 
         overlayBufferedImage = moonMapOverlay.overlay(currentBufferedImage)
         overlayBufferedImage?.let {

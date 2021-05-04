@@ -12,17 +12,17 @@ import java.io.InputStreamReader
 import javax.imageio.ImageIO
 import kotlin.math.*
 
-class MoonMapOverlay(
-    val centerX: Int,
-    val centerY: Int,
-    val radius: Int,
-    val rotation: Double,
-    val librationLatitude: Double,
-    val librationLongitude: Double,
-    val phase: Double,
-    val strokeWidth: Float
-) {
-    val pointsOfInterest: MutableSet<PointOfInterest> = mutableSetOf()
+class MoonMapOverlay() {
+    var centerX: Int = 0
+    var centerY: Int = 0
+    var radius: Int = 0
+    var rotation: Double = 0.0
+    var librationLatitude: Double = 0.0
+    var librationLongitude: Double = 0.0
+    var phase: Double = 0.0
+    var strokeWidth: Float = 1.0f
+
+    private val pointsOfInterest: MutableSet<PointOfInterest> = mutableSetOf()
 
     fun loadMaria(filter: (PointOfInterest) -> Boolean = { true }) {
         loadPoints(PointType.Mare, "MoonMaria.csv", filter)
@@ -179,27 +179,20 @@ class MoonMapOverlay(
         fun map1(filepath: String) {
             val image = ImageIO.read(File(filepath))!!
 
+            val map = MoonMapOverlay()
+
             val offsetX = -60
             val offsetY = +120
-            val centerX = image.width / 2 + offsetX
-            val centerY = image.height / 2 + offsetY
-            val radius = (min(image.width, image.height) * 0.8 / 2).toInt()
-            val rotation = -16.0
-            val librationLatitude = -6.6
-            val librationLongitude = -6.5
-            val phase = 0.6
-            val strokeWidth = min(image.width, image.height) * 0.001f
 
-            val map = MoonMapOverlay(
-                centerX,
-                centerY,
-                radius,
-                rotation,
-                librationLatitude,
-                librationLongitude,
-                phase,
-                strokeWidth
-            )
+            map.centerX = image.width / 2 + offsetX
+            map.centerY = image.height / 2 + offsetY
+            map.radius = (min(image.width, image.height) * 0.8 / 2).toInt()
+            map.rotation = -16.0
+            map.librationLatitude = -6.6
+            map.librationLongitude = -6.5
+            map.phase = 0.6
+            map.strokeWidth = min(image.width, image.height) * 0.001f
+
             map.loadMaria()
             map.loadVisibleCraters()
             //map.loadCraters() { it.diameter > 120 }
@@ -211,29 +204,23 @@ class MoonMapOverlay(
         fun map2(filepath: String) {
             val image = ImageIO.read(File(filepath))!!
 
+            val map = MoonMapOverlay()
+
             val offsetX = 0
             val offsetY = 20
-            val centerX = image.width / 2 + offsetX
-            val centerY = image.height / 2 + offsetY
-            val radius = (min(image.width, image.height) * 0.87 / 2).toInt()
-            val rotation = 10.0
-            val librationLatitude = -7.5
-            val librationLongitude = 6.0
-            val phase = 0.3
-            val strokeWidth = min(image.width, image.height) * 0.001f
 
-            val map = MoonMapOverlay(
-                centerX,
-                centerY,
-                radius,
-                rotation,
-                librationLatitude,
-                librationLongitude,
-                phase,
-                strokeWidth
-            )
+            map.centerX = image.width / 2 + offsetX
+            map.centerY = image.height / 2 + offsetY
+            map.radius = (min(image.width, image.height) * 0.87 / 2).toInt()
+            map.rotation = 10.0
+            map.librationLatitude = -7.5
+            map.librationLongitude = 6.0
+            map.phase = 0.3
+            map.strokeWidth = min(image.width, image.height) * 0.001f
+
             map.loadMaria()
             map.loadVisibleCraters()
+
             val overlayImage = map.overlay(image)
 
             ImageIO.write(overlayImage, "png", File("overlay2.png"))
