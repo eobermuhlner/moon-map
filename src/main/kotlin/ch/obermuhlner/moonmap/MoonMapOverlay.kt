@@ -22,6 +22,13 @@ class MoonMapOverlay() {
     var phase: Double = 0.0
     var strokeWidth: Float = 1.0f
 
+    var gridColor = Color(0.0f, 1.0f, 0.0f, 0.4f)
+    var gridLabelColor = Color(0.0f, 1.0f, 0.0f, 0.8f)
+    var phaseColor = Color(0.0f, 1.0f, 0.0f, 0.2f)
+    var labelMareColor = Color(0.0f, 1.0f, 0.0f, 0.5f)
+    var labelCraterColor = Color(1.0f, 1.0f, 0.0f, 0.5f)
+    var shadowColor = Color(0.0f, 0.0f, 0.0f, 0.5f)
+
     private val pointsOfInterest: MutableSet<PointOfInterest> = mutableSetOf()
 
     fun loadMaria(filter: (PointOfInterest) -> Boolean = { true }) {
@@ -73,13 +80,13 @@ class MoonMapOverlay() {
         graphics.stroke = BasicStroke(strokeWidth)
         graphics.font = graphics.font.deriveFont(graphics.font.size * strokeWidth)
 
-        graphics.color = Color.green.darker().darker()
+        graphics.color = gridColor
         graphics.drawOval(centerX-radius, centerY-radius, radius*2, radius*2)
         drawCoordinateGrid(graphics)
 
-        graphics.color = Color.green.brighter().brighter()
+        graphics.color = phaseColor
         drawLongitude(graphics, phase * 180.0 + 90.0, drawLabel = false)
-        graphics.color = Color.GREEN.brighter()
+
         for (point in pointsOfInterest) {
             drawPointOfInterest(graphics, point)
         }
@@ -99,9 +106,11 @@ class MoonMapOverlay() {
         for (longitude in -90 .. 90 step 2) {
             val nextPoint = sphereToCartesianPoint(latitude, longitude.toDouble())
             if (lastPoint != null) {
+                graphics.color = gridColor
                 drawLine(graphics, lastPoint, nextPoint)
             }
             if (longitude == -90) {
+                graphics.color = gridLabelColor
                 drawName(graphics, latitude.toString(), latitude, longitude.toDouble())
             }
             lastPoint = nextPoint
@@ -128,8 +137,8 @@ class MoonMapOverlay() {
 
     private fun drawPointOfInterest(graphics: Graphics2D, pointOfInterest: PointOfInterest) {
         graphics.color = when (pointOfInterest.type) {
-            PointType.Mare -> Color.GREEN.brighter().brighter()
-            PointType.Crater -> Color.YELLOW
+            PointType.Mare -> labelMareColor
+            PointType.Crater -> labelCraterColor
         }
         drawName(graphics, pointOfInterest.name, pointOfInterest.latitude, pointOfInterest.longitude, pointOfInterest.type == PointType.Crater)
     }
@@ -143,7 +152,7 @@ class MoonMapOverlay() {
         }
 
         val color = graphics.color
-        graphics.color = Color.BLACK
+        graphics.color = shadowColor
         val step = graphics.font.size / 20
         graphics.drawString(name, cartesianPoint.x.toInt() - step, cartesianPoint.y.toInt() - step)
         graphics.drawString(name, cartesianPoint.x.toInt() - step, cartesianPoint.y.toInt() + step)

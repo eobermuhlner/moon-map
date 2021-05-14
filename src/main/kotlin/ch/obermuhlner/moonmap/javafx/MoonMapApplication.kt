@@ -10,9 +10,11 @@ import javafx.beans.binding.Bindings
 import javafx.beans.property.*
 import javafx.event.EventHandler
 import javafx.scene.Parent
+import javafx.scene.control.ColorPicker
 import javafx.scene.image.Image
 import javafx.scene.image.ImageView
 import javafx.scene.image.WritableImage
+import javafx.scene.paint.Color
 import javafx.stage.FileChooser
 import java.awt.image.BufferedImage
 import java.io.File
@@ -36,6 +38,13 @@ class MoonMapApplication : Application() {
     private val librationLongitudeProperty: DoubleProperty = SimpleDoubleProperty()
     private val strokeWidthProperty: DoubleProperty = SimpleDoubleProperty()
 
+    private val gridColorProperty: ObjectProperty<Color> = SimpleObjectProperty()
+    private val gridLabelColorProperty: ObjectProperty<Color> = SimpleObjectProperty()
+    private val phaseColorProperty: ObjectProperty<Color> = SimpleObjectProperty()
+    private val labelMareColorProperty: ObjectProperty<Color> = SimpleObjectProperty()
+    private val labelCraterColorProperty: ObjectProperty<Color> = SimpleObjectProperty()
+    private val shadowColorProperty: ObjectProperty<Color> = SimpleObjectProperty()
+
     private var homeDirectory = Paths.get(System.getProperty("user.home", "."))
 
     private var currentBufferedImage = BufferedImage(IMAGE_WIDTH, IMAGE_HEIGHT, BufferedImage.TYPE_INT_RGB)
@@ -55,6 +64,13 @@ class MoonMapApplication : Application() {
     val moonMapOverlay = MoonMapOverlay().apply {
         loadMaria()
         loadVisibleCraters()
+
+        gridColorProperty.set(toColor(gridColor))
+        gridLabelColorProperty.set(toColor(gridLabelColor))
+        phaseColorProperty.set(toColor(phaseColor))
+        labelMareColorProperty.set(toColor(labelMareColor))
+        labelCraterColorProperty.set(toColor(labelCraterColor))
+        shadowColorProperty.set(toColor(shadowColor))
     }
 
     override fun start(primaryStage: Stage) {
@@ -355,6 +371,66 @@ class MoonMapApplication : Application() {
                     }
                 }
             }
+            row {
+                cell {
+                    label("Grid Color:")
+                }
+                cell {
+                    ColorPicker().apply {
+                        valueProperty().bindBidirectional(gridColorProperty)
+                    }
+                }
+            }
+            row {
+                cell {
+                    label("Grid Label Color:")
+                }
+                cell {
+                    ColorPicker().apply {
+                        valueProperty().bindBidirectional(gridLabelColorProperty)
+                    }
+                }
+            }
+            row {
+                cell {
+                    label("Phase Color:")
+                }
+                cell {
+                    ColorPicker().apply {
+                        valueProperty().bindBidirectional(phaseColorProperty)
+                    }
+                }
+            }
+            row {
+                cell {
+                    label("Label Mare Color:")
+                }
+                cell {
+                    ColorPicker().apply {
+                        valueProperty().bindBidirectional(labelMareColorProperty)
+                    }
+                }
+            }
+            row {
+                cell {
+                    label("Label Crater Color:")
+                }
+                cell {
+                    ColorPicker().apply {
+                        valueProperty().bindBidirectional(labelCraterColorProperty)
+                    }
+                }
+            }
+            row {
+                cell {
+                    label("Shadow Color:")
+                }
+                cell {
+                    ColorPicker().apply {
+                        valueProperty().bindBidirectional(shadowColorProperty)
+                    }
+                }
+            }
         }
     }
 
@@ -403,6 +479,13 @@ class MoonMapApplication : Application() {
         librationLatitudeProperty.addListener { _, _, _ -> updateMoonMap() }
         librationLongitudeProperty.addListener { _, _, _ -> updateMoonMap() }
         strokeWidthProperty.addListener { _, _, _ -> updateMoonMap() }
+
+        gridColorProperty.addListener { _, _, _ -> updateMoonMap() }
+        gridLabelColorProperty.addListener { _, _, _ -> updateMoonMap() }
+        phaseColorProperty.addListener { _, _, _ -> updateMoonMap() }
+        labelMareColorProperty.addListener { _, _, _ -> updateMoonMap() }
+        labelCraterColorProperty.addListener { _, _, _ -> updateMoonMap() }
+        shadowColorProperty.addListener { _, _, _ -> updateMoonMap() }
     }
 
     private fun loadImage(file: File) {
@@ -419,7 +502,7 @@ class MoonMapApplication : Application() {
         phaseProperty.set(0.0)
         librationLatitudeProperty.set(0.0)
         librationLongitudeProperty.set(0.0)
-        strokeWidthProperty.set(max(imageSize * 0.001, 1.0))
+        strokeWidthProperty.set(max(imageSize * 0.0015, 1.5))
 
         updateMoonMap()
     }
@@ -434,6 +517,13 @@ class MoonMapApplication : Application() {
         moonMapOverlay.phase = phaseProperty.get() / 100.0
         moonMapOverlay.strokeWidth = strokeWidthProperty.get().toFloat()
 
+        moonMapOverlay.gridColor = toAwtColor(gridColorProperty.get())
+        moonMapOverlay.gridLabelColor = toAwtColor(gridLabelColorProperty.get())
+        moonMapOverlay.phaseColor = toAwtColor(phaseColorProperty.get())
+        moonMapOverlay.labelMareColor = toAwtColor(labelMareColorProperty.get())
+        moonMapOverlay.labelCraterColor = toAwtColor(labelCraterColorProperty.get())
+        moonMapOverlay.shadowColor = toAwtColor(shadowColorProperty.get())
+
         overlayBufferedImage = moonMapOverlay.overlay(currentBufferedImage)
         overlayBufferedImage?.let {
             val overlayImage = WritableImage(it.width, it.height)
@@ -445,6 +535,14 @@ class MoonMapApplication : Application() {
             }
             currentImageView.image = overlayImage
         }
+    }
+
+    private fun toAwtColor(color: Color): java.awt.Color {
+        return java.awt.Color(color.red.toFloat(), color.green.toFloat(), color.blue.toFloat(), color.opacity.toFloat())
+    }
+
+    private fun toColor(color: java.awt.Color): Color {
+        return Color(color.red.toDouble() / 255.0, color.green.toDouble() / 255.0, color.blue.toDouble() / 255.0, color.alpha.toDouble() / 255.0)
     }
 
     companion object {
